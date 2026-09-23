@@ -5,60 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Catalog</title>
 
-<!--
-  =========================================================================
-  HOW THIS WORKS
-  =========================================================================
-  1. Fill in the CONFIG block below (business name, logo, WhatsApp number,
-     accent color, social links, spreadsheet ID, and category list).
-     LOGO_URL is optional — leave it blank and the shop name just shows as
-     styled text instead, which looks fine on its own.
-
-  2. Make ONE Google Sheet. Each TAB in it is one top-level category — e.g.
-     a tab called "Skincare" and a tab called "Haircare". In each tab, use
-     these column headers in row 1, exactly:
-       name | price | photo | description | photos | subcategory | in_stock
-     - "photo" is the main thumbnail shown on the card. "photos" is
-       OPTIONAL — extra image links for that product, separated by commas
-       in a single cell. Tapping a product opens a popup with the main
-       photo, any extra photos, and the full description — no separate
-       page needed. Leave "photos" blank if you only have one image.
-     - "subcategory" is OPTIONAL — e.g. inside the "Skincare" tab, rows
-       could be "Cleansers", "Serums", or "Moisturizers". A second row of
-       filter chips appears automatically once a category has 2+ distinct
-       subcategory values. Leave blank on any row that doesn't need one.
-     - "in_stock" is OPTIONAL — leave blank (or "yes") for in-stock items.
-       Set it to "no" and that product shows a "Sold Out" badge and its
-       WhatsApp button is disabled, instead of hiding the product outright.
-     - Image links need to be direct links. Easiest: upload to Google Drive,
-       Share > "Anyone with the link", then use:
-       https://drive.google.com/uc?export=view&id=FILE_ID
-       (FILE_ID is the long code in the Drive share link). Or use a site
-       like imgbb.com / imgur.com — paste a photo, get a direct link.
-
-  3. For EACH tab: File > Share > Publish to web > under "Link", pick
-     that specific tab from the dropdown (not "Entire Document") >
-     format "Comma-separated values (.csv)" > Publish > copy the link.
-     This is a one-time step per tab — it does not need redoing when you
-     add or edit products inside that tab, only if you add a brand-new tab.
-
-  4. Paste each tab's name + published CSV link into CATEGORY_SHEETS
-     below, in the order you want the chips to appear, e.g.:
-       CATEGORY_SHEETS: [
-         { name: "Ornaments", url: "https://docs.google.com/.../pub?output=csv" },
-         { name: "Keychains", url: "https://docs.google.com/.../pub?output=csv" }
-       ]
-
-  5. Host this HTML file somewhere free: GitHub Pages, Netlify Drop, or
-     Cloudflare Pages all work by just dragging this file in.
-
-  6. Later: editing prices/photos/descriptions inside an already-published
-     tab updates live automatically — just edit the Sheet, no republishing.
-     Adding a brand-new CATEGORY (a new tab) needs step 3 done once for
-     that tab, then one new entry added to CATEGORY_SHEETS.
-  =========================================================================
--->
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -70,7 +16,7 @@
 
 <style>
   :root {
-    --accent: #fd78de;      /* CONFIG: change this to your brand color */
+    --accent: #fd78de;
     --ink: #23201d;
     --paper: #faf7f2;
     --card: #ffffff;
@@ -473,8 +419,8 @@
 
 <header>
   <img class="logo" id="business-logo" src="" alt="" style="display:none">
-  <h1 id="business-name">Your Shop Name</h1>
-  <p id="business-tagline">Browse below, then order on WhatsApp</p>
+  <h1 id="business-name"></h1>
+  <p id="business-tagline"></p>
 </header>
 
 <div class="hero-carousel" id="hero-carousel">
@@ -511,14 +457,12 @@
 </div>
 
 <script>
-  // =======================================================================
-  // CONFIG — edit these for each shop
-  // =======================================================================
+
   const CONFIG = {
     BUSINESS_NAME: "Nouran",
     TAGLINE: "Take a look around, then say hello on WhatsApp.",
-    LOGO_URL: "",                      // optional — direct image link to a logo. Leave blank to just show the name as text.
-    WHATSAPP_NUMBER: "0096170461272",   // digits only, country code, no + or spaces
+    LOGO_URL: "",.
+    WHATSAPP_NUMBER: "0096170461272",
     FOOTER_NOTE: "Little things, made by hand.",
 
     HERO_SHEET_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSokfAjiccay1JvNXYKgdiF9mV-G3jhULrNfTdBMx4Gg9dwA_8EvOSRAWkAgbPGSGjcpBtzdBq_1eip/pub?gid=1224855388&single=true&output=csv",
@@ -532,15 +476,13 @@
     ],
 
     SOCIALS: {
-      whatsapp: "https://wa.me/0096170461272",   // e.g. "https://wa.me/15551234567"
-      instagram: "https://instagram.com/nouran_artistry",  // e.g. "https://instagram.com/yourshop"
-      facebook: "",   // e.g. "https://facebook.com/yourshop"
-      tiktok: ""      // e.g. "https://tiktok.com/@yourshop"
+      whatsapp: "https://wa.me/0096170461272",
+      instagram: "https://instagram.com/nouran_artistry",
+      facebook: "",
+      tiktok: ""
     }
   };
 
-  // Fallback sample rows shown until a spreadsheet is configured, so the
-  // page never looks broken while you're still setting it up.
   const SAMPLE_PRODUCTS = [
     { name: "Sample Product 1", price: "$12", photo: "https://placehold.co/400x400?text=Photo+1", photos: "https://placehold.co/400x400?text=Angle+2,https://placehold.co/400x400?text=Angle+3", description: "Short description of the item goes here.", category: "Samples", subcategory: "Group A", in_stock: "yes" },
     { name: "Sample Product 2", price: "$18", photo: "https://placehold.co/400x400?text=Photo+2", photos: "", description: "Short description of the item goes here.", category: "Samples", subcategory: "Group B", in_stock: "no" },
@@ -571,7 +513,6 @@
     logoEl.style.display = "block";
   }
 
-  // ---- footer social icons ----
   const socialsEl = document.getElementById("socials");
   Object.keys(CONFIG.SOCIALS).forEach(key => {
     const url = CONFIG.SOCIALS[key];
@@ -712,7 +653,6 @@
     });
   }
 
-  // ---- product detail popup ----
   const modalOverlay = document.getElementById("modal-overlay");
 
   function galleryFor(p) {
