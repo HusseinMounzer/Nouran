@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catalog</title>
+
+<!--
+  =========================================================================
+  HOW THIS WORKS
+  =========================================================================
+  1. Fill in the CONFIG block below (business name, logo, WhatsApp number,
+     accent color, social links, spreadsheet ID, and category list).
+     LOGO_URL is optional — leave it blank and the shop name just shows as
+     styled text instead, which looks fine on its own.
+
+  2. Make ONE Google Sheet. Each TAB in it is one top-level category — e.g.
+     a tab called "Skincare" and a tab called "Haircare". In each tab, use
+     these column headers in row 1, exactly:
+       name | price | photo | description | photos | subcategory | in_stock
+     - "photo" is the main thumbnail shown on the card. "photos" is
+       OPTIONAL — extra image links for that product, separated by commas
+       in a single cell. Tapping a product opens a popup with the main
+       photo, any extra photos, and the full description — no separate
+       page needed. Leave "photos" blank if you only have one image.
+     - "subcategory" is OPTIONAL — e.g. inside the "Skincare" tab, rows
+       could be "Cleansers", "Serums", or "Moisturizers". A second row of
+       filter chips appears automatically once a category has 2+ distinct
+       subcategory values. Leave blank on any row that doesn't need one.
+     - "in_stock" is OPTIONAL — leave blank (or "yes") for in-stock items.
+       Set it to "no" and that product shows a "Sold Out" badge and its
+       WhatsApp button is disabled, instead of hiding the product outright.
+     - Image links need to be direct links. Easiest: upload to Google Drive,
+       Share > "Anyone with the link", then use:
+       https://drive.google.com/uc?export=view&id=FILE_ID
+       (FILE_ID is the long code in the Drive share link). Or use a site
+       like imgbb.com / imgur.com — paste a photo, get a direct link.
+
+  3. For EACH tab: File > Share > Publish to web > under "Link", pick
+     that specific tab from the dropdown (not "Entire Document") >
+     format "Comma-separated values (.csv)" > Publish > copy the link.
+     This is a one-time step per tab — it does not need redoing when you
+     add or edit products inside that tab, only if you add a brand-new tab.
+
+  4. Paste each tab's name + published CSV link into CATEGORY_SHEETS
+     below, in the order you want the chips to appear, e.g.:
+       CATEGORY_SHEETS: [
+         { name: "Ornaments", url: "https://docs.google.com/.../pub?output=csv" },
+         { name: "Keychains", url: "https://docs.google.com/.../pub?output=csv" }
+       ]
+
+  5. Host this HTML file somewhere free: GitHub Pages, Netlify Drop, or
+     Cloudflare Pages all work by just dragging this file in.
+
+  6. Later: editing prices/photos/descriptions inside an already-published
+     tab updates live automatically — just edit the Sheet, no republishing.
+     Adding a brand-new CATEGORY (a new tab) needs step 3 done once for
+     that tab, then one new entry added to CATEGORY_SHEETS.
+  =========================================================================
+-->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Quicksand:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Zeyada&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playwrite+CU+Guides&family=Zeyada&display=swap" rel="stylesheet">
+
+
+<style>
+  :root {
+    --accent: #fd78de;      /* CONFIG: change this to your brand color */
+    --ink: #23201d;
+    --paper: #faf7f2;
+    --card: #ffffff;
+    --line: #e7e0d6;
+    --muted: #7a7267;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Quicksand', sans-serif;
+    line-height: 1.5;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 3rem 1.5rem 2rem;
+    text-align: center;
+    border-bottom: 1px solid var(--line);
+  }
+
+  header .logo {
+    max-height: 84px;
+    max-width: 220px;
+    width: auto;
+    display: block;
+    margin: 0 auto 1rem;
+  }
+
+  header h1 {
+    color: #fd78de;
+    font-family: "Playwrite CU Guides", cursive;
+    font-size: clamp(2.2rem, 4vw, 2.8rem);
+    font-weight: 450;
+    margin: 0 0 0.4rem;
+    letter-spacing: 0.01em;
+  }
+
+  header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 1.3rem;
+    font-family: "Zeyada", cursive;
+  }
+
+  main {
+    max-width: 1080px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+    flex: 1;
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+  }
+
+  .search-box {
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto 1.4rem;
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: 0.95rem;
+    background: var(--card);
+    color: var(--ink);
+  }
+
+  .search-box:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .subchips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: center;
+    margin-bottom: 1.6rem;
+  }
+
+  .chip.sub {
+    font-size: 0.8rem;
+    padding: 0.35rem 0.8rem;
+    opacity: 0.85;
+  }
+
+  .chip {
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--ink);
+    padding: 0.45rem 0.95rem;
+    border-radius: 999px;
+    font-size: 0.88rem;
+    cursor: pointer;
+  }
+
+  .chip.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .card.sold-out img { filter: grayscale(70%) opacity(0.7); }
+
+  .badge-soldout {
+    position: absolute;
+    top: 0.6rem;
+    left: 0.6rem;
+    background: var(--ink);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    letter-spacing: 0.02em;
+  }
+
+  .card { position: relative; }
+
+  .order-btn.sold-out-btn {
+    background: var(--line);
+    color: var(--muted);
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .stock-status {
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin: -0.4rem 0 0.7rem;
+  }
+
+  #status {
+    text-align: center;
+    color: var(--muted);
+    padding: 3rem 0;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    background: var(--line);
+  }
+
+  .card { cursor: pointer; }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 16, 12, 0.55);
+    z-index: 50;
+    align-items: center;
+    justify-content: center;
+    padding: 1.2rem;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border-radius: 8px;
+    max-width: 640px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 0.7rem;
+    right: 0.7rem;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    font-size: 1.1rem;
+    cursor: pointer;
+    z-index: 2;
+  }
+
+  .modal-main-img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    display: block;
+  }
+
+  .modal-thumbs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.8rem 1.2rem 0;
+    overflow-x: auto;
+  }
+
+  .modal-thumbs img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    flex-shrink: 0;
+  }
+
+  .modal-thumbs img.active { border-color: var(--accent); }
+
+  .modal-body { padding: 1.2rem 1.5rem 1.6rem; }
+
+  .modal-body h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 400;
+    font-size: 1.4rem;
+    margin: 0 0 0.4rem;
+  }
+
+  .modal-body .price { margin: 0.2rem 0 0.9rem; }
+
+  .modal-body .desc {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin: 0 0 1.1rem;
+  }
+
+  .card-body {
+    padding: 1rem 1.1rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .card-body h3 {
+    margin: 0 0 0.3rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+
+  .card-body .desc {
+    color: var(--muted);
+    font-size: 0.92rem;
+    margin: 0 0 0.8rem;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .price {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin: 0 0 0.9rem;
+  }
+
+  .order-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    padding: 0.65rem 1rem;
+    border-radius: 5px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    transition: opacity 0.15s ease;
+  }
+
+  .order-btn:hover { opacity: 0.85; }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 2.2rem 1.5rem 2.6rem;
+    text-align: center;
+  }
+
+  .socials {
+    display: flex;
+    justify-content: center;
+    gap: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .socials a {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .socials a:hover { border-color: var(--accent); color: var(--accent); }
+
+  .socials svg { width: 20px; height: 20px; fill: currentColor; }
+
+  footer .note {
+    font-family: "Playwrite CU Guides", cursive;
+    color: #fd78de;
+    font-size: 1.1rem;
+    font-weight: 400;
+    margin: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .order-btn { transition: none; }
+  }
+
+  .hero-carousel {
+    position: relative;
+    max-width: 1080px;
+    margin: 2rem auto 0;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 16 / 6;
+    background: var(--line);
+  }
+
+  .hero-track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.5s ease;
+  }
+
+  .hero-track img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .hero-dots {
+    position: absolute;
+    bottom: 0.8rem;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+  }
+
+  .hero-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.6);
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .hero-dot.active { background: #fff; }
+
+  @media (max-width: 480px) {
+    .hero-carousel { aspect-ratio: 4 / 3; }
+  }
+
+</style>
+</head>
+<body>
+
+<header>
+  <img class="logo" id="business-logo" src="" alt="" style="display:none">
+  <h1 id="business-name">Your Shop Name</h1>
+  <p id="business-tagline">Browse below, then order on WhatsApp</p>
+</header>
+
+<div class="hero-carousel" id="hero-carousel">
+  <div class="hero-track" id="hero-track"></div>
+  <div class="hero-dots" id="hero-dots"></div>
+</div>
+
+<main>
+  <input type="search" id="search-box" class="search-box" placeholder="Search products...">
+  <div class="chips" id="chips"></div>
+  <div class="subchips" id="subchips"></div>
+  <div id="status">Loading products…</div>
+  <div class="grid" id="grid"></div>
+</main>
+
+<footer>
+  <div class="socials" id="socials"></div>
+  <p class="note" id="footer-note"></p>
+</footer>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
+    <img class="modal-main-img" id="modal-main-img" src="" alt="">
+    <div class="modal-thumbs" id="modal-thumbs"></div>
+    <div class="modal-body">
+      <h2 id="modal-name"></h2>
+      <p class="price" id="modal-price"></p>
+      <p class="stock-status" id="modal-stock-status" style="display:none">Currently sold out</p>
+      <p class="desc" id="modal-desc"></p>
+      <a class="order-btn" id="modal-order-btn" href="#" target="_blank" rel="noopener">Order on WhatsApp</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  // =======================================================================
+  // CONFIG — edit these for each shop
+  // =======================================================================
+  const CONFIG = {
+    BUSINESS_NAME: "Nouran",
+    TAGLINE: "Take a look around, then say hello on WhatsApp.",
+    LOGO_URL: "",                      // optional — direct image link to a logo. Leave blank to just show the name as text.
+    WHATSAPP_NUMBER: "0096170461272",   // digits only, country code, no + or spaces
+    FOOTER_NOTE: "Little things, made by hand.",
+
+    HERO_SHEET_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSokfAjiccay1JvNXYKgdiF9mV-G3jhULrNfTdBMx4Gg9dwA_8EvOSRAWkAgbPGSGjcpBtzdBq_1eip/pub?gid=1224855388&single=true&output=csv",
+
+    CATEGORY_SHEETS: [
+      { name: "Notebooks - دفاتر", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSokfAjiccay1JvNXYKgdiF9mV-G3jhULrNfTdBMx4Gg9dwA_8EvOSRAWkAgbPGSGjcpBtzdBq_1eip/pub?gid=1372699140&single=true&output=csv" },
+      { name: "Candles - شموع", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSokfAjiccay1JvNXYKgdiF9mV-G3jhULrNfTdBMx4Gg9dwA_8EvOSRAWkAgbPGSGjcpBtzdBq_1eip/pub?gid=259409008&single=true&output=csv" },
+      { name: "Gift Boxes - علب هدايا", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSokfAjiccay1JvNXYKgdiF9mV-G3jhULrNfTdBMx4Gg9dwA_8EvOSRAWkAgbPGSGjcpBtzdBq_1eip/pub?gid=1114555150&single=true&output=csv" },
+      { name: "Stationery - قرطاسية", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSokfAjiccay1JvNXYKgdiF9mV-G3jhULrNfTdBMx4Gg9dwA_8EvOSRAWkAgbPGSGjcpBtzdBq_1eip/pub?gid=1813205240&single=true&output=csv" },
+      { name: "Seasonal - منتجات موسمية", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSokfAjiccay1JvNXYKgdiF9mV-G3jhULrNfTdBMx4Gg9dwA_8EvOSRAWkAgbPGSGjcpBtzdBq_1eip/pub?gid=1496763493&single=true&output=csv" }
+    ],
+
+    SOCIALS: {
+      whatsapp: "https://wa.me/0096170461272",   // e.g. "https://wa.me/15551234567"
+      instagram: "https://instagram.com/nouran_artistry",  // e.g. "https://instagram.com/yourshop"
+      facebook: "",   // e.g. "https://facebook.com/yourshop"
+      tiktok: ""      // e.g. "https://tiktok.com/@yourshop"
+    }
+  };
+
+  // Fallback sample rows shown until a spreadsheet is configured, so the
+  // page never looks broken while you're still setting it up.
+  const SAMPLE_PRODUCTS = [
+    { name: "Sample Product 1", price: "$12", photo: "https://placehold.co/400x400?text=Photo+1", photos: "https://placehold.co/400x400?text=Angle+2,https://placehold.co/400x400?text=Angle+3", description: "Short description of the item goes here.", category: "Samples", subcategory: "Group A", in_stock: "yes" },
+    { name: "Sample Product 2", price: "$18", photo: "https://placehold.co/400x400?text=Photo+2", photos: "", description: "Short description of the item goes here.", category: "Samples", subcategory: "Group B", in_stock: "no" },
+    { name: "Sample Product 3", price: "$9",  photo: "https://placehold.co/400x400?text=Photo+3", photos: "", description: "Short description of the item goes here.", category: "Samples", subcategory: "Group A", in_stock: "yes" }
+  ];
+
+  const SAMPLE_HERO_IMAGES = [
+    "https://placehold.co/1080x400?text=Banner+1",
+    "https://placehold.co/1080x400?text=Banner+2"
+  ];
+
+  const ICONS = {
+    whatsapp: '<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18a8 8 0 0 1-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1 1 12 20Zm4.4-5.9c-.2-.1-1.4-.7-1.6-.8s-.4-.1-.5.1-.6.8-.7.9-.3.2-.5.1a6.5 6.5 0 0 1-1.9-1.2 7 7 0 0 1-1.3-1.6c-.1-.2 0-.3.1-.4l.3-.4.2-.3a.5.5 0 0 0 0-.5c-.1-.1-.5-1.3-.7-1.7s-.4-.4-.5-.4h-.5a.9.9 0 0 0-.6.3 2.7 2.7 0 0 0-.9 2.1c0 1.2.9 2.4 1 2.6.1.1 1.8 2.8 4.3 3.9.6.3 1.1.4 1.4.5a3.4 3.4 0 0 0 1.6.1c.5-.1 1.4-.6 1.6-1.1s.2-1 .2-1.1-.2-.2-.4-.3Z"/></svg>',
+    instagram: '<svg viewBox="0 0 24 24"><path d="M12 2c2.7 0 3.1 0 4.1.1a7.4 7.4 0 0 1 2.5.5 5 5 0 0 1 2.8 2.8 7.4 7.4 0 0 1 .5 2.5c0 1 .1 1.4.1 4.1s0 3.1-.1 4.1a7.4 7.4 0 0 1-.5 2.5 5 5 0 0 1-2.8 2.8 7.4 7.4 0 0 1-2.5.5c-1 0-1.4.1-4.1.1s-3.1 0-4.1-.1a7.4 7.4 0 0 1-2.5-.5 5 5 0 0 1-2.8-2.8 7.4 7.4 0 0 1-.5-2.5C2 15.1 2 14.7 2 12s0-3.1.1-4.1a7.4 7.4 0 0 1 .5-2.5 5 5 0 0 1 2.8-2.8 7.4 7.4 0 0 1 2.5-.5C8.9 2 9.3 2 12 2Zm0 3.4A6.6 6.6 0 1 0 18.6 12 6.6 6.6 0 0 0 12 5.4Zm0 10.9A4.3 4.3 0 1 1 16.3 12 4.3 4.3 0 0 1 12 16.3Zm6.9-11.2a1.5 1.5 0 1 1-1.5-1.5 1.5 1.5 0 0 1 1.5 1.5Z"/></svg>',
+    facebook: '<svg viewBox="0 0 24 24"><path d="M13.5 22v-8.4h2.8l.4-3.3h-3.2V8.1c0-1 .3-1.6 1.7-1.6h1.6V3.5A22 22 0 0 0 14.4 3c-2.5 0-4.2 1.5-4.2 4.3v2h-2.8v3.3h2.8V22Z"/></svg>',
+    tiktok: '<svg viewBox="0 0 24 24"><path d="M16.7 2h-3.1v13.7a2.7 2.7 0 1 1-2-2.6v-3.2a5.9 5.9 0 1 0 5.1 5.8V8.6a7.6 7.6 0 0 0 4.4 1.4V6.9a4.5 4.5 0 0 1-4.4-4.4Z"/></svg>'
+  };
+
+  document.getElementById("business-name").textContent = CONFIG.BUSINESS_NAME;
+  document.getElementById("business-tagline").textContent = CONFIG.TAGLINE;
+  document.getElementById("footer-note").textContent = CONFIG.FOOTER_NOTE;
+  document.title = CONFIG.BUSINESS_NAME;
+
+  if (CONFIG.LOGO_URL) {
+    const logoEl = document.getElementById("business-logo");
+    logoEl.src = CONFIG.LOGO_URL;
+    logoEl.alt = CONFIG.BUSINESS_NAME + " logo";
+    logoEl.style.display = "block";
+  }
+
+  // ---- footer social icons ----
+  const socialsEl = document.getElementById("socials");
+  Object.keys(CONFIG.SOCIALS).forEach(key => {
+    const url = CONFIG.SOCIALS[key];
+    if (!url) return;
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.setAttribute("aria-label", key);
+    a.innerHTML = ICONS[key];
+    socialsEl.appendChild(a);
+  });
+
+  function waLink(productName) {
+    const msg = encodeURIComponent("Hi! I'm interested in: " + productName);
+    return "https://wa.me/" + CONFIG.WHATSAPP_NUMBER + "?text=" + msg;
+  }
+
+  let ALL_PRODUCTS = [];
+  let ACTIVE_CATEGORY = "All";
+  let ACTIVE_SUBCATEGORY = "All";
+  let SEARCH_QUERY = "";
+  let CATEGORIES_CAN_SHOW = false;
+
+  function inStock(p) {
+    const v = (p.in_stock || "").toString().trim().toLowerCase();
+    return !(v === "no" || v === "false" || v === "0" || v === "out" || v === "out of stock" || v === "sold out");
+  }
+
+  function renderChips(categories) {
+    const chipsEl = document.getElementById("chips");
+    CATEGORIES_CAN_SHOW = categories.length >= 2;
+    if (!CATEGORIES_CAN_SHOW) { chipsEl.style.display = "none"; return; }
+    const withAll = ["All", ...categories];
+    chipsEl.innerHTML = withAll.map(c =>
+      `<button class="chip${c === ACTIVE_CATEGORY ? ' active' : ''}" data-cat="${c}">${c}</button>`
+    ).join("");
+    chipsEl.querySelectorAll(".chip").forEach(btn => {
+      btn.addEventListener("click", () => {
+        ACTIVE_CATEGORY = btn.dataset.cat;
+        ACTIVE_SUBCATEGORY = "All";
+        chipsEl.querySelectorAll(".chip").forEach(b => b.classList.toggle("active", b === btn));
+        renderSubchips();
+        renderGrid();
+      });
+    });
+  }
+
+  let SUBCATS_CAN_SHOW = false;
+
+  function renderSubchips() {
+    const subEl = document.getElementById("subchips");
+    if (ACTIVE_CATEGORY === "All") {
+      SUBCATS_CAN_SHOW = false;
+      subEl.style.display = "none";
+      subEl.innerHTML = "";
+      return;
+    }
+    const inCat = ALL_PRODUCTS.filter(p => p.category === ACTIVE_CATEGORY);
+    const subs = [...new Set(inCat.map(p => (p.subcategory || "").trim()).filter(Boolean))];
+    SUBCATS_CAN_SHOW = subs.length >= 2;
+    if (!SUBCATS_CAN_SHOW) { subEl.style.display = "none"; subEl.innerHTML = ""; return; }
+    subEl.style.display = "flex";
+    const withAll = ["All", ...subs];
+    subEl.innerHTML = withAll.map(s =>
+      `<button class="chip sub${s === ACTIVE_SUBCATEGORY ? ' active' : ''}" data-sub="${s}">${s}</button>`
+    ).join("");
+    subEl.querySelectorAll(".chip").forEach(btn => {
+      btn.addEventListener("click", () => {
+        ACTIVE_SUBCATEGORY = btn.dataset.sub;
+        subEl.querySelectorAll(".chip").forEach(b => b.classList.toggle("active", b === btn));
+        renderGrid();
+      });
+    });
+  }
+
+  document.getElementById("search-box").addEventListener("input", e => {
+    SEARCH_QUERY = e.target.value;
+    renderGrid();
+  });
+
+  let CURRENT_RENDERED = [];
+
+  function renderGrid() {
+    const grid = document.getElementById("grid");
+    const status = document.getElementById("status");
+    const chipsEl = document.getElementById("chips");
+    const subEl = document.getElementById("subchips");
+    const q = SEARCH_QUERY.trim().toLowerCase();
+
+    let products;
+    if (q) {
+      chipsEl.style.display = "none";
+      subEl.style.display = "none";
+      products = ALL_PRODUCTS.filter(p =>
+        (p.name || "").toLowerCase().includes(q) ||
+        (p.description || "").toLowerCase().includes(q)
+      );
+    } else {
+      chipsEl.style.display = CATEGORIES_CAN_SHOW ? "flex" : "none";
+      subEl.style.display = SUBCATS_CAN_SHOW ? "flex" : "none";
+      products = ACTIVE_CATEGORY === "All"
+        ? ALL_PRODUCTS
+        : ALL_PRODUCTS.filter(p => p.category === ACTIVE_CATEGORY);
+      if (ACTIVE_SUBCATEGORY !== "All") {
+        products = products.filter(p => (p.subcategory || "").trim() === ACTIVE_SUBCATEGORY);
+      }
+    }
+    CURRENT_RENDERED = products;
+
+    if (!products.length) {
+      grid.innerHTML = "";
+      status.style.display = "block";
+      status.textContent = q ? `No products match "${SEARCH_QUERY}".` : "No products here yet.";
+      return;
+    }
+    status.style.display = "none";
+    grid.innerHTML = products.map((p, i) => {
+      const stocked = inStock(p);
+      return `
+      <div class="card${stocked ? '' : ' sold-out'}" data-idx="${i}">
+        ${stocked ? '' : '<span class="badge-soldout">Sold Out</span>'}
+        <img src="${p.photo || 'https://placehold.co/400x400?text=No+Photo'}" alt="${p.name}" loading="lazy">
+        <div class="card-body">
+          <h3>${p.name}</h3>
+          <p class="desc">${p.description || ""}</p>
+          <p class="price">${p.price}</p>
+          ${stocked
+            ? `<a class="order-btn" href="${waLink(p.name)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Order on WhatsApp</a>`
+            : `<span class="order-btn sold-out-btn">Sold Out</span>`}
+        </div>
+      </div>
+    `;
+    }).join("");
+
+    grid.querySelectorAll(".card").forEach(card => {
+      card.addEventListener("click", () => openModal(CURRENT_RENDERED[card.dataset.idx]));
+    });
+  }
+
+  // ---- product detail popup ----
+  const modalOverlay = document.getElementById("modal-overlay");
+
+  function galleryFor(p) {
+    const extra = (p.photos || "").split(",").map(s => s.trim()).filter(Boolean);
+    const main = p.photo || "https://placehold.co/600x450?text=No+Photo";
+    return [main, ...extra.filter(url => url !== main)];
+  }
+
+  function openModal(p) {
+    if (!p) return;
+    const images = galleryFor(p);
+    const stocked = inStock(p);
+    document.getElementById("modal-name").textContent = p.name;
+    document.getElementById("modal-price").textContent = p.price;
+    document.getElementById("modal-desc").textContent = p.description || "";
+    document.getElementById("modal-main-img").src = images[0];
+    document.getElementById("modal-main-img").alt = p.name;
+
+    const orderBtn = document.getElementById("modal-order-btn");
+    const stockStatus = document.getElementById("modal-stock-status");
+    if (stocked) {
+      orderBtn.style.display = "";
+      orderBtn.href = waLink(p.name);
+      orderBtn.textContent = "Order on WhatsApp";
+      stockStatus.style.display = "none";
+    } else {
+      orderBtn.style.display = "none";
+      stockStatus.style.display = "block";
+    }
+
+    const thumbsEl = document.getElementById("modal-thumbs");
+    if (images.length < 2) {
+      thumbsEl.innerHTML = "";
+    } else {
+      thumbsEl.innerHTML = images.map((src, i) =>
+        `<img src="${src}" class="${i === 0 ? 'active' : ''}" data-src="${src}">`
+      ).join("");
+      thumbsEl.querySelectorAll("img").forEach(thumb => {
+        thumb.addEventListener("click", () => {
+          document.getElementById("modal-main-img").src = thumb.dataset.src;
+          thumbsEl.querySelectorAll("img").forEach(t => t.classList.toggle("active", t === thumb));
+        });
+      });
+    }
+    modalOverlay.classList.add("open");
+  }
+
+  function closeModal() { modalOverlay.classList.remove("open"); }
+
+  document.getElementById("modal-close").addEventListener("click", closeModal);
+  modalOverlay.addEventListener("click", e => { if (e.target === modalOverlay) closeModal(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+  function loadCategory(sheetEntry) {
+    return new Promise(resolve => {
+      Papa.parse(sheetEntry.url, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: results => {
+          const rows = results.data
+            .filter(r => r.name && r.price)
+            .map(r => ({ ...r, category: sheetEntry.name }));
+          resolve(rows);
+        },
+        error: () => resolve([])
+      });
+    });
+  }
+
+  async function loadAll() {
+    if (!CONFIG.CATEGORY_SHEETS.length) {
+      ALL_PRODUCTS = SAMPLE_PRODUCTS;
+      renderChips([]);
+      renderSubchips();
+      renderGrid();
+      return;
+    }
+    const results = await Promise.all(CONFIG.CATEGORY_SHEETS.map(loadCategory));
+    ALL_PRODUCTS = results.flat();
+    if (!ALL_PRODUCTS.length) ALL_PRODUCTS = SAMPLE_PRODUCTS;
+    renderChips(CONFIG.CATEGORY_SHEETS.map(c => c.name));
+    renderSubchips();
+    renderGrid();
+  }
+
+  const HERO_IMAGES = [
+    "https://placehold.co/1080x400?text=Banner+1",
+    "https://placehold.co/1080x400?text=Banner+2",
+    "https://placehold.co/1080x400?text=Banner+3"
+  ];
+
+  function initHeroCarousel(images) {
+    const wrap = document.getElementById("hero-carousel");
+    const track = document.getElementById("hero-track");
+    const dotsEl = document.getElementById("hero-dots");
+    if (!images.length) { wrap.style.display = "none"; return; }
+    wrap.style.display = "block";
+    track.innerHTML = images.map(src => `<img src="${src}" alt="">`).join("");
+    dotsEl.innerHTML = images.map((_, i) =>
+      `<button class="hero-dot${i === 0 ? ' active' : ''}" data-i="${i}"></button>`
+    ).join("");
+    let index = 0;
+    function goTo(i) {
+      index = i;
+      track.style.transform = `translateX(-${i * 100}%)`;
+      dotsEl.querySelectorAll(".hero-dot").forEach((d, di) => d.classList.toggle("active", di === i));
+    }
+    dotsEl.querySelectorAll(".hero-dot").forEach(dot => {
+      dot.addEventListener("click", () => goTo(Number(dot.dataset.i)));
+    });
+    if (images.length > 1) {
+      setInterval(() => goTo((index + 1) % images.length), 4000);
+    }
+  }
+
+  function loadHeroImages() {
+    if (!CONFIG.HERO_SHEET_URL) { initHeroCarousel(SAMPLE_HERO_IMAGES); return; }
+    Papa.parse(CONFIG.HERO_SHEET_URL, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: results => {
+        const images = results.data
+          .map(r => (r.image || "").trim())
+          .filter(Boolean);
+        initHeroCarousel(images.length ? images : SAMPLE_HERO_IMAGES);
+      },
+      error: () => initHeroCarousel(SAMPLE_HERO_IMAGES)
+    });
+  }
+
+  loadHeroImages();
+
+  loadAll();
+</script>
+
+</body>
+</html>
