@@ -63,8 +63,9 @@
   }
 
   header p {
-    margin: 0;
+    font-family: "Zeyada", cursive;
     color: var(--muted);
+    margin: 0;
     font-size: 1.3rem;
     font-family: "Zeyada", cursive;
   }
@@ -269,6 +270,35 @@
 
   .modal-body .price { margin: 0.2rem 0 0.9rem; }
 
+  .combo-savings {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin: -0.3rem 0 0.7rem;
+  }
+
+  .combo-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .combo-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.88rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .combo-list li:last-child { border-bottom: none; }
+
+  .combo-list li .item-price { color: var(--muted); white-space: nowrap; }
+
   .modal-body .desc {
     color: var(--muted);
     font-size: 0.95rem;
@@ -421,8 +451,8 @@
 
 <header>
   <img class="logo" id="business-logo" src="" alt="" style="display:none">
-  <h1 id="business-name"></h1>
-  <p id="business-tagline"></p>
+  <h1 id="business-name">Nouran</h1>
+  <p id="business-tagline">Take a look around, then say hello on WhatsApp.ku</p>
 </header>
 
 <div class="hero-carousel" id="hero-carousel">
@@ -440,7 +470,7 @@
 
 <footer>
   <div class="socials" id="socials"></div>
-  <p class="note" id="footer-note"></p>
+  <p class="note" id="footer-note">Little things, made by hand.</p>
 </footer>
 
 <div class="modal-overlay" id="modal-overlay">
@@ -452,6 +482,10 @@
       <h2 id="modal-name"></h2>
       <p class="price" id="modal-price"></p>
       <p class="stock-status" id="modal-stock-status" style="display:none">Currently sold out</p>
+      <div id="modal-combo" style="display:none">
+        <p class="combo-savings" id="modal-combo-savings"></p>
+        <ul class="combo-list" id="modal-combo-list"></ul>
+      </div>
       <p class="desc" id="modal-desc"></p>
       <a class="order-btn" id="modal-order-btn" href="#" target="_blank" rel="noopener">Order on WhatsApp</a>
     </div>
@@ -464,7 +498,7 @@
     BUSINESS_NAME: "Nouran",
     TAGLINE: "Take a look around, then say hello on WhatsApp.",
     LOGO_URL: "",.
-    WHATSAPP_NUMBER: "0096170461272",
+    WHATSAPP_NUMBER: "96170461272",
     FOOTER_NOTE: "Little things, made by hand.",
 
     HERO_SHEET_URL: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSokfAjiccay1JvNXYKgdiF9mV-G3jhULrNfTdBMx4Gg9dwA_8EvOSRAWkAgbPGSGjcpBtzdBq_1eip/pub?gid=1224855388&single=true&output=csv",
@@ -478,7 +512,7 @@
     ],
 
     SOCIALS: {
-      whatsapp: "https://wa.me/0096170461272",
+      whatsapp: "https://wa.me/96170461272",
       instagram: "https://instagram.com/nouran_artistry",
       facebook: "",
       tiktok: ""
@@ -655,12 +689,31 @@
     });
   }
 
+  // ---- product detail popup ----
   const modalOverlay = document.getElementById("modal-overlay");
 
   function galleryFor(p) {
     const extra = (p.photos || "").split(",").map(s => s.trim()).filter(Boolean);
     const main = p.photo || "https://placehold.co/600x450?text=No+Photo";
     return [main, ...extra.filter(url => url !== main)];
+  }
+
+  function parsePriceNumber(str) {
+    const match = String(str || "").match(/[\d]+(\.[\d]+)?/);
+    return match ? parseFloat(match[0]) : null;
+  }
+
+  function currencyPrefix(str) {
+    const match = String(str || "").match(/^[^\d]*/);
+    return match ? match[0] : "";
+  }
+
+  function parseComboItems(raw) {
+    if (!raw) return [];
+    return raw.split(",").map(pair => {
+      const [name, price] = pair.split(":");
+      return { name: (name || "").trim(), price: (price || "").trim() };
+    }).filter(item => item.name && item.price);
   }
 
   function openModal(p) {
@@ -672,6 +725,33 @@
     document.getElementById("modal-desc").textContent = p.description || "";
     document.getElementById("modal-main-img").src = images[0];
     document.getElementById("modal-main-img").alt = p.name;
+
+    const comboEl = document.getElementById("modal-combo");
+    const comboItems = parseComboItems(p.combo_items);
+    if (comboItems.length) {
+      const subtotal = comboItems.reduce((sum, item) => {
+        const val = parsePriceNumber(item.price);
+        return val === null ? sum : sum + val;
+      }, 0);
+      const comboPrice = parsePriceNumber(p.price);
+      const prefix = currencyPrefix(p.price) || currencyPrefix(comboItems[0].price) || "";
+      const savings = comboPrice === null ? null : subtotal - comboPrice;
+
+      document.getElementById("modal-combo-list").innerHTML = comboItems.map(item =>
+        `<li><span>${item.name}</span><span class="item-price">${item.price}</span></li>`
+      ).join("");
+
+      const savingsEl = document.getElementById("modal-combo-savings");
+      if (savings !== null && savings > 0) {
+        savingsEl.textContent = `You save ${prefix}${savings.toFixed(2)} with this box`;
+        savingsEl.style.display = "block";
+      } else {
+        savingsEl.style.display = "none";
+      }
+      comboEl.style.display = "block";
+    } else {
+      comboEl.style.display = "none";
+    }
 
     const orderBtn = document.getElementById("modal-order-btn");
     const stockStatus = document.getElementById("modal-stock-status");
@@ -740,12 +820,6 @@
     renderSubchips();
     renderGrid();
   }
-
-  const HERO_IMAGES = [
-    "https://placehold.co/1080x400?text=Banner+1",
-    "https://placehold.co/1080x400?text=Banner+2",
-    "https://placehold.co/1080x400?text=Banner+3"
-  ];
 
   function initHeroCarousel(images) {
     const wrap = document.getElementById("hero-carousel");
