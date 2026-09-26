@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nouran — Admin</title>
+
+<style>
+  :root {
+    --accent: #fd78de;
+    --ink: #23201d;
+    --paper: #faf7f2;
+    --card: #ffffff;
+    --line: #e7e0d6;
+    --muted: #7a7267;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+  }
+  header { padding: 2rem 1.5rem 1.5rem; text-align: center; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 1.6rem; margin: 0; font-weight: 600; }
+  main { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1.4rem;
+    margin-bottom: 1.6rem;
+  }
+
+  label { display: block; font-size: 0.85rem; font-weight: 600; margin: 0.9rem 0 0.3rem; }
+  label:first-child { margin-top: 0; }
+
+  input[type="text"], input[type="password"], input[type="file"], textarea, select {
+    width: 100%;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: #fff;
+    color: var(--ink);
+  }
+
+  textarea { resize: vertical; min-height: 70px; }
+
+  .row { display: flex; gap: 0.8rem; }
+  .row > div { flex: 1; }
+
+  button {
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.65rem 1.1rem;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-secondary { background: var(--line); color: var(--ink); }
+  .btn-danger { background: #f91d05; color: #fff; }
+  button:disabled { opacity: 0.5; cursor: default; }
+
+  .actions { display: flex; gap: 0.6rem; margin-top: 1.1rem; }
+
+  .msg { font-size: 0.88rem; margin-top: 0.8rem; padding: 0.6rem 0.8rem; border-radius: 5px; display: none; }
+  .msg.ok { display: block; background: #e6f4ea; color: #1e6b34; }
+  .msg.err { display: block; background: #fbe7e5; color: #a3352a; }
+
+  .product-list { list-style: none; padding: 0; margin: 0; }
+  .product-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .product-list li:last-child { border-bottom: none; }
+  .product-list img { width: 46px; height: 46px; object-fit: cover; border-radius: 4px; background: var(--line); flex-shrink: 0; }
+  .product-list .info { flex: 1; min-width: 0; }
+  .product-list .info .name { font-weight: 600; font-size: 0.92rem; }
+  .product-list .info .price { color: var(--muted); font-size: 0.85rem; }
+  .product-list .row-actions { display: flex; gap: 0.4rem; }
+  .product-list button { padding: 0.4rem 0.7rem; font-size: 0.8rem; }
+
+  .hint { color: var(--muted); font-size: 0.82rem; margin-top: 0.3rem; }
+  .locked-notice { text-align: center; color: var(--muted); padding: 3rem 1rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="page-title">Nouran — Admin</h1>
+</header>
+
+<main>
+
+  <div id="password-gate" class="panel">
+    <label for="password-input">Admin password</label>
+    <input type="password" id="password-input" placeholder="Enter password">
+    <div class="actions">
+      <button class="btn-primary" id="unlock-btn">Unlock</button>
+    </div>
+    <p class="hint">This isn't stored anywhere — you'll need to re-enter it if you reload the page.</p>
+    <div class="msg" id="gate-msg"></div>
+  </div>
+
+  <div id="admin-area" style="display:none">
+
+    <div class="panel">
+      <h2 style="margin-top:0; font-size:1.1rem;">Hero banners</h2>
+      <label for="banner-photo">Add a banner image</label>
+      <input type="file" id="banner-photo" accept="image/*">
+      <div class="actions">
+        <button type="button" class="btn-primary" id="add-banner-btn">Add banner</button>
+      </div>
+      <div class="msg" id="banner-msg"></div>
+      <ul class="product-list" id="banner-list" style="margin-top:1rem;"></ul>
+    </div>
+
+    <div class="panel">
+      <label for="category-select">Category (Sheet tab)</label>
+      <select id="category-select"></select>
+    </div>
+
+    <div class="panel">
+      <h2 id="form-title" style="margin-top:0; font-size:1.1rem;">Add a product</h2>
+      <form id="product-form">
+        <label for="f-name">Name</label>
+        <input type="text" id="f-name" required>
+
+        <div class="row">
+          <div>
+            <label for="f-price">Price</label>
+            <input type="text" id="f-price" placeholder="$25" required>
+          </div>
+          <div>
+            <label for="f-subcategory">Subcategory (optional)</label>
+            <input type="text" id="f-subcategory" placeholder="e.g. Serums">
+          </div>
+        </div>
+
+        <label for="f-description">Description</label>
+        <textarea id="f-description"></textarea>
+
+        <label for="f-photo">Main photo</label>
+        <input type="file" id="f-photo" accept="image/*">
+        <p class="hint" id="photo-hint">Leave empty to keep the current photo when editing.</p>
+
+        <label for="f-photos">Extra photos (optional — pick multiple)</label>
+        <input type="file" id="f-photos" accept="image/*" multiple>
+        <p class="hint" id="photos-hint">Leave empty to keep existing extra photos when editing. Choosing new files replaces them all.</p>
+        <div class="row">
+          <div>
+            <label for="f-instock">In stock?</label>
+            <select id="f-instock">
+              <option value="yes">Yes</option>
+              <option value="no">No — sold out</option>
+            </select>
+          </div>
+          <div>
+            <label for="f-combo">Combo items (optional)</label>
+            <input type="text" id="f-combo" placeholder="Item:$8, Item:$15">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn-primary" id="submit-btn">Add product</button>
+          <button type="button" class="btn-secondary" id="cancel-edit-btn" style="display:none">Cancel edit</button>
+        </div>
+        <div class="msg" id="form-msg"></div>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2 style="margin-top:0; font-size:1.1rem;">Products in this category</h2>
+      <div id="list-status" class="hint">Loading…</div>
+      <ul class="product-list" id="product-list"></ul>
+    </div>
+
+  </div>
+
+</main>
+
+<script>
+
+  const CONFIG = {
+    WEB_APP_URL: "https://script.google.com/macros/s/AKfycbzihyGcl_IMQykx7qYlneNx59vsphZ9mXhLjThEENNRlrKdhCYV2Y5CoXWYjN0VwW0BOw/exec",
+    CATEGORIES: [
+      "Notebooks - دفاتر", "Candles - شموع", "Gift Boxes - علب هدايا", "Stationery - قرطاسية", "Seasonal - منتجات موسمية"
+    ],
+    BANNER_SHEET: "Banner"
+  };
+
+  let PASSWORD = "";
+  let EDITING_ID = null;
+  let CURRENT_ROWS = [];
+
+
+  const categorySelect = document.getElementById("category-select");
+  categorySelect.innerHTML = CONFIG.CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join("");
+  categorySelect.addEventListener("change", loadProducts);
+
+
+  document.getElementById("unlock-btn").addEventListener("click", () => {
+    const pw = document.getElementById("password-input").value;
+    if (!pw) return;
+    PASSWORD = pw;
+    document.getElementById("password-gate").style.display = "none";
+    document.getElementById("admin-area").style.display = "block";
+    loadProducts();
+  });
+
+  function callApi(payload) {
+    return fetch(CONFIG.WEB_APP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    }).then(r => r.json());
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function showMsg(el, text, isError) {
+    el.textContent = text;
+    el.className = "msg " + (isError ? "err" : "ok");
+  }
+
+  function loadProducts() {
+    const sheetName = categorySelect.value;
+    const status = document.getElementById("list-status");
+    const list = document.getElementById("product-list");
+    if (!sheetName) return;
+    status.style.display = "block";
+    status.textContent = "Loading…";
+    list.innerHTML = "";
+
+    callApi({ action: "list", sheetName })
+      .then(res => {
+        if (res.error) { status.textContent = "Error: " + res.error; return; }
+        CURRENT_ROWS = res.rows || [];
+        status.style.display = "none";
+        if (!CURRENT_ROWS.length) {
+          status.style.display = "block";
+          status.textContent = "No products in this category yet.";
+          return;
+        }
+        list.innerHTML = CURRENT_ROWS.map((p, i) => `
+          <li>
+            <img src="${p.photo || ''}" alt="">
+            <div class="info">
+              <div class="name">${p.name || "(no name)"}</div>
+              <div class="price">${p.price || ""}</div>
+            </div>
+            <div class="row-actions">
+              <button class="btn-secondary" data-edit="${i}">Edit</button>
+              <button class="btn-danger" data-delete="${i}">Delete</button>
+            </div>
+          </li>
+        `).join("");
+
+        list.querySelectorAll("[data-edit]").forEach(btn => {
+          btn.addEventListener("click", () => startEdit(CURRENT_ROWS[btn.dataset.edit]));
+        });
+        list.querySelectorAll("[data-delete]").forEach(btn => {
+          btn.addEventListener("click", () => handleDelete(CURRENT_ROWS[btn.dataset.delete]));
+        });
+      })
+      .catch(err => { status.textContent = "Couldn't load products — check WEB_APP_URL. (" + err.message + ")"; });
+  }
+
+  const form = document.getElementById("product-form");
+  const formTitle = document.getElementById("form-title");
+  const submitBtn = document.getElementById("submit-btn");
+  const cancelEditBtn = document.getElementById("cancel-edit-btn");
+
+  function startEdit(p) {
+    EDITING_ID = p.id;
+    formTitle.textContent = "Edit product";
+    submitBtn.textContent = "Save changes";
+    cancelEditBtn.style.display = "inline-block";
+    document.getElementById("f-name").value = p.name || "";
+    document.getElementById("f-price").value = p.price || "";
+    document.getElementById("f-subcategory").value = p.subcategory || "";
+    document.getElementById("f-description").value = p.description || "";
+    document.getElementById("f-instock").value = (String(p.in_stock || "").toLowerCase() === "no") ? "no" : "yes";
+    document.getElementById("f-combo").value = p.combo_items || "";
+    document.getElementById("f-photo").value = "";
+    document.getElementById("f-photos").value = "";
+    const existingCount = (p.photos || "").split(",").map(s => s.trim()).filter(Boolean).length;
+    document.getElementById("photos-hint").textContent = existingCount
+      ? `This product currently has ${existingCount} extra photo(s). Leave empty to keep them, or pick new files to replace them all.`
+      : "Leave empty to keep existing extra photos when editing. Choosing new files replaces them all.";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function resetForm() {
+    EDITING_ID = null;
+    form.reset();
+    formTitle.textContent = "Add a product";
+    submitBtn.textContent = "Add product";
+    cancelEditBtn.style.display = "none";
+    document.getElementById("photos-hint").textContent = "Leave empty to keep existing extra photos when editing. Choosing new files replaces them all.";
+  }
+
+  cancelEditBtn.addEventListener("click", resetForm);
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msgEl = document.getElementById("form-msg");
+    submitBtn.disabled = true;
+
+    const product = {
+      name: document.getElementById("f-name").value.trim(),
+      price: document.getElementById("f-price").value.trim(),
+      subcategory: document.getElementById("f-subcategory").value.trim(),
+      description: document.getElementById("f-description").value.trim(),
+      in_stock: document.getElementById("f-instock").value,
+      combo_items: document.getElementById("f-combo").value.trim()
+    };
+
+    const payload = {
+      action: EDITING_ID ? "edit" : "add",
+      password: PASSWORD,
+      sheetName: categorySelect.value,
+      product
+    };
+    if (EDITING_ID) payload.id = EDITING_ID;
+
+    const fileInput = document.getElementById("f-photo");
+    const photosInput = document.getElementById("f-photos");
+    try {
+      if (fileInput.files[0]) {
+        payload.imageBase64 = await fileToBase64(fileInput.files[0]);
+      }
+      if (photosInput.files.length) {
+        payload.extraImages = await Promise.all(
+          Array.from(photosInput.files).map(async f => ({ base64: await fileToBase64(f) }))
+        );
+      }
+      const res = await callApi(payload);
+      if (res.error) {
+        showMsg(msgEl, res.error, true);
+      } else {
+        showMsg(msgEl, EDITING_ID ? "Saved." : "Product added.", false);
+        resetForm();
+        loadProducts();
+      }
+    } catch (err) {
+      showMsg(msgEl, "Request failed: " + err.message, true);
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  function handleDelete(p) {
+    if (!confirm(`Delete "${p.name}"? This can't be undone.`)) return;
+    callApi({ action: "delete", password: PASSWORD, sheetName: categorySelect.value, id: p.id })
+      .then(res => {
+        if (res.error) { alert(res.error); return; }
+        loadProducts();
+      })
+      .catch(err => alert("Request failed: " + err.message));
+  }
+
+  function loadBanners() {
+  const list = document.getElementById("banner-list");
+  callApi({ action: "list", sheetName: CONFIG.BANNER_SHEET })
+    .then(res => {
+      if (res.error) return;
+      const rows = res.rows || [];
+      list.innerHTML = rows.map((b, i) => `
+        <li>
+          <img src="${b.image || ''}" alt="">
+          <div class="info"><div class="name">Banner ${i + 1}</div></div>
+          <div class="row-actions">
+            <button class="btn-danger" data-banner-delete="${i}">Delete</button>
+          </div>
+        </li>
+      `).join("");
+      list.querySelectorAll("[data-banner-delete]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const b = rows[btn.dataset.bannerDelete];
+          if (!confirm("Delete this banner?")) return;
+          callApi({ action: "delete", password: PASSWORD, sheetName: CONFIG.BANNER_SHEET, id: b.id })
+            .then(() => loadBanners());
+        });
+      });
+    });
+}
+
+document.getElementById("add-banner-btn").addEventListener("click", async () => {
+  const fileInput = document.getElementById("banner-photo");
+  const msgEl = document.getElementById("banner-msg");
+  if (!fileInput.files[0]) return;
+  const base64 = await fileToBase64(fileInput.files[0]);
+  callApi({
+    action: "add",
+    password: PASSWORD,
+    sheetName: CONFIG.BANNER_SHEET,
+    photoField: "image",
+    product: {},
+    imageBase64: base64
+  }).then(res => {
+    if (res.error) { showMsg(msgEl, res.error, true); return; }
+    showMsg(msgEl, "Banner added.", false);
+    fileInput.value = "";
+    loadBanners();
+  });
+});
+</script>
+
+</body>
+</html>
