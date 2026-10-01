@@ -481,6 +481,48 @@ body::before {
   }
 }
 
+.modal-main-img { cursor: zoom-in; }
+
+.zoom-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.zoom-overlay.open { display: flex; }
+
+.zoom-overlay img {
+  max-width: 100%;
+  max-height: 100%;
+  cursor: zoom-in;
+  transition: transform 0.2s ease;
+  touch-action: none;
+  user-select: none;
+}
+
+.zoom-overlay img.zoomed { cursor: zoom-out; transition: none; }
+
+.zoom-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 1.4rem;
+  cursor: pointer;
+  z-index: 2;
+}
+
 </style>
 </head>
 <body>
@@ -526,6 +568,11 @@ body::before {
       <a class="order-btn" id="modal-order-btn" href="#" target="_blank" rel="noopener">Order on WhatsApp</a>
     </div>
   </div>
+</div>
+
+<div class="zoom-overlay" id="zoom-overlay">
+  <button class="zoom-close" id="zoom-close" aria-label="Close">&times;</button>
+  <img id="zoom-img" src="" alt="" draggable="false">
 </div>
 
 <script>
@@ -897,6 +944,61 @@ body::before {
       error: () => initHeroCarousel(SAMPLE_HERO_IMAGES)
     });
   }
+
+  const zoomOverlay = document.getElementById("zoom-overlay");
+const zoomImg = document.getElementById("zoom-img");
+let zoomScale = 1, zoomX = 0, zoomY = 0;
+let isPanning = false, didPan = false, panStartX = 0, panStartY = 0, startZoomX = 0, startZoomY = 0;
+
+function updateZoomTransform() {
+  zoomImg.style.transform = `translate(${zoomX}px, ${zoomY}px) scale(${zoomScale})`;
+}
+
+function openZoom(src) {
+  zoomImg.src = src;
+  zoomScale = 1; zoomX = 0; zoomY = 0;
+  zoomImg.classList.remove("zoomed");
+  updateZoomTransform();
+  zoomOverlay.classList.add("open");
+}
+
+function closeZoom() { zoomOverlay.classList.remove("open"); }
+
+zoomImg.addEventListener("click", () => {
+  if (didPan) { didPan = false; return; }
+  zoomScale = zoomScale === 1 ? 2.5 : 1;
+  if (zoomScale === 1) { zoomX = 0; zoomY = 0; }
+  zoomImg.classList.toggle("zoomed", zoomScale !== 1);
+  updateZoomTransform();
+});
+
+zoomImg.addEventListener("pointerdown", e => {
+  if (zoomScale === 1) return;
+  isPanning = true; didPan = false;
+  panStartX = e.clientX; panStartY = e.clientY;
+  startZoomX = zoomX; startZoomY = zoomY;
+  zoomImg.setPointerCapture(e.pointerId);
+});
+
+zoomImg.addEventListener("pointermove", e => {
+  if (!isPanning) return;
+  const dx = e.clientX - panStartX, dy = e.clientY - panStartY;
+  if (Math.abs(dx) > 5 || Math.abs(dy) > 5) didPan = true;
+  zoomX = startZoomX + dx; zoomY = startZoomY + dy;
+  updateZoomTransform();
+});
+
+["pointerup", "pointercancel"].forEach(evt =>
+  zoomImg.addEventListener(evt, () => { isPanning = false; })
+);
+
+document.getElementById("zoom-close").addEventListener("click", closeZoom);
+zoomOverlay.addEventListener("click", e => { if (e.target === zoomOverlay) closeZoom(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeZoom(); });
+
+document.getElementById("modal-main-img").addEventListener("click", () => {
+  openZoom(document.getElementById("modal-main-img").src);
+});
 
   loadHeroImages();
 
