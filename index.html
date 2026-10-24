@@ -362,6 +362,15 @@ body::before {
 
   .order-btn:hover { opacity: 0.85; }
 
+.variant-label { font-size: 0.82rem; font-weight: 600; color: var(--muted); margin: 0 0 0.4rem; }
+.variant-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 1rem; }
+.variant-chip {
+  border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  padding: 0.45rem 0.9rem; border-radius: 999px; font-size: 0.88rem;
+  font-family: inherit; cursor: pointer;
+}
+.variant-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  
   footer {
     border-top: 1px solid var(--line);
     padding: 2.2rem 1.5rem 2.6rem;
@@ -585,6 +594,10 @@ body::before {
     <div class="modal-body">
       <h2 id="modal-name"></h2>
       <p class="price" id="modal-price"></p>
+      <div id="modal-variants" style="display:none">
+  <p class="variant-label">Size</p>
+  <div class="variant-chips" id="modal-variant-chips"></div>
+</div>
       <p class="stock-status" id="modal-stock-status" style="display:none">Currently sold out</p>
       <div id="modal-combo" style="display:none">
         <p class="combo-savings" id="modal-combo-savings"></p>
@@ -778,6 +791,7 @@ body::before {
     status.style.display = "none";
     grid.innerHTML = products.map((p, i) => {
       const stocked = inStock(p);
+      const hasVariants = parseComboItems(p.variants).length > 0;
       return `
       <div class="card${stocked ? '' : ' sold-out'}" data-idx="${i}">
         ${stocked ? '' : '<span class="badge-soldout">Sold Out</span>'}
@@ -785,10 +799,12 @@ body::before {
         <div class="card-body">
           <h3>${p.name}</h3>
           <p class="desc">${p.description || ""}</p>
-          <p class="price">${p.price}</p>
-          ${stocked
-            ? `<a class="order-btn" href="${waLink(p.name)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Order on WhatsApp</a>`
-            : `<span class="order-btn sold-out-btn">Sold Out</span>`}
+          <p class="price">${displayPrice(p)}</p>
+          ${!stocked
+  ? `<span class="order-btn sold-out-btn">Sold Out</span>`
+  : hasVariants
+    ? `<span class="order-btn">Choose size</span>`
+    : `<a class="order-btn" href="${waLink(p.name)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Order on WhatsApp</a>`}
         </div>
       </div>
     `;
@@ -825,6 +841,15 @@ body::before {
     }).filter(item => item.name && item.price);
   }
 
+function displayPrice(p) {
+  const v = parseComboItems(p.variants);
+  if (!v.length) return p.price;
+  const nums = v.map(x => parsePriceNumber(x.price)).filter(n => n !== null);
+  if (!nums.length) return p.price;
+  const lowest = v.find(x => parsePriceNumber(x.price) === Math.min(...nums));
+  return "From " + lowest.price;
+}
+  
   function openModal(p) {
     if (!p) return;
     const images = galleryFor(p);
@@ -874,6 +899,25 @@ body::before {
       stockStatus.style.display = "block";
     }
 
+const variantsEl = document.getElementById("modal-variants");
+const variants = parseComboItems(p.variants);
+if (variants.length) {
+  const chipsEl = document.getElementById("modal-variant-chips");
+  const select = (i) => {
+    chipsEl.querySelectorAll(".variant-chip").forEach((c, ci) => c.classList.toggle("active", ci === i));
+    document.getElementById("modal-price").textContent = variants[i].price;
+    orderBtn.href = waLink(p.name + " (" + variants[i].name + ")");
+  };
+  chipsEl.innerHTML = variants.map((v, i) =>
+    `<button type="button" class="variant-chip">${v.name}</button>`
+  ).join("");
+  chipsEl.querySelectorAll(".variant-chip").forEach((c, i) => c.addEventListener("click", () => select(i)));
+  variantsEl.style.display = "block";
+  select(0);
+} else {
+  variantsEl.style.display = "none";
+}
+    
     const thumbsEl = document.getElementById("modal-thumbs");
     if (images.length < 2) {
       thumbsEl.innerHTML = "";
