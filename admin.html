@@ -171,6 +171,10 @@
           </div>
         </div>
 
+<label for="f-variants">Sizes / options (optional)</label>
+<input type="text" id="f-variants" placeholder="A4:$10, A5:$7, A6:$5">
+<p class="hint">One product, several sizes. Format: Name:Price, Name:Price. Put the lowest price in the Price field above.</p>
+        
         <div class="actions">
           <button type="submit" class="btn-primary" id="submit-btn">Add product</button>
           <button type="button" class="btn-secondary" id="cancel-edit-btn" style="display:none">Cancel edit</button>
@@ -301,6 +305,7 @@
     document.getElementById("f-combo").value = p.combo_items || "";
     document.getElementById("f-photo").value = "";
     document.getElementById("f-photos").value = "";
+    document.getElementById("f-variants").value = p.variants || "";
     const existingCount = (p.photos || "").split(",").map(s => s.trim()).filter(Boolean).length;
     document.getElementById("photos-hint").textContent = existingCount
       ? `This product currently has ${existingCount} extra photo(s). Leave empty to keep them, or pick new files to replace them all.`
@@ -330,7 +335,8 @@
       subcategory: document.getElementById("f-subcategory").value.trim(),
       description: document.getElementById("f-description").value.trim(),
       in_stock: document.getElementById("f-instock").value,
-      combo_items: document.getElementById("f-combo").value.trim()
+      combo_items: document.getElementById("f-combo").value.trim(),
+      variants: document.getElementById("f-variants").value.trim()
     };
 
     const payload = {
