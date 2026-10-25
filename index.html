@@ -841,6 +841,34 @@ body::before {
     }).filter(item => item.name && item.price);
   }
 
+  function parseVariantPhotos(raw) {
+  const map = {};
+  (raw || "").split("|").forEach(part => {
+    const i = part.indexOf("=");
+    if (i === -1) return;
+    const name = part.slice(0, i).trim().toLowerCase();
+    const urls = part.slice(i + 1).split(";").map(s => s.trim()).filter(Boolean);
+    if (name && urls.length) map[name] = urls;
+  });
+  return map;
+}
+
+function renderGallery(images) {
+  const main = document.getElementById("modal-main-img");
+  main.src = images[0];
+  const thumbsEl = document.getElementById("modal-thumbs");
+  if (images.length < 2) { thumbsEl.innerHTML = ""; return; }
+  thumbsEl.innerHTML = images.map((src, i) =>
+    `<img src="${src}" class="${i === 0 ? 'active' : ''}" data-src="${src}">`
+  ).join("");
+  thumbsEl.querySelectorAll("img").forEach(thumb => {
+    thumb.addEventListener("click", () => {
+      main.src = thumb.dataset.src;
+      thumbsEl.querySelectorAll("img").forEach(t => t.classList.toggle("active", t === thumb));
+    });
+  });
+}
+
 function displayPrice(p) {
   const v = parseComboItems(p.variants);
   if (!v.length) return p.price;
@@ -903,12 +931,14 @@ const variantsEl = document.getElementById("modal-variants");
 const variants = parseComboItems(p.variants);
 if (variants.length) {
   const chipsEl = document.getElementById("modal-variant-chips");
+  const vphotos = parseVariantPhotos(p.variant_photos);
   const select = (i) => {
     chipsEl.querySelectorAll(".variant-chip").forEach((c, ci) => c.classList.toggle("active", ci === i));
     document.getElementById("modal-price").textContent = variants[i].price;
     orderBtn.href = waLink(p.name + " (" + variants[i].name + ")");
+    renderGallery(vphotos[variants[i].name.toLowerCase()] || images);
   };
-  chipsEl.innerHTML = variants.map((v, i) =>
+  chipsEl.innerHTML = variants.map(v =>
     `<button type="button" class="variant-chip">${v.name}</button>`
   ).join("");
   chipsEl.querySelectorAll(".variant-chip").forEach((c, i) => c.addEventListener("click", () => select(i)));
@@ -916,22 +946,9 @@ if (variants.length) {
   select(0);
 } else {
   variantsEl.style.display = "none";
+  renderGallery(images);
 }
     
-    const thumbsEl = document.getElementById("modal-thumbs");
-    if (images.length < 2) {
-      thumbsEl.innerHTML = "";
-    } else {
-      thumbsEl.innerHTML = images.map((src, i) =>
-        `<img src="${src}" class="${i === 0 ? 'active' : ''}" data-src="${src}">`
-      ).join("");
-      thumbsEl.querySelectorAll("img").forEach(thumb => {
-        thumb.addEventListener("click", () => {
-          document.getElementById("modal-main-img").src = thumb.dataset.src;
-          thumbsEl.querySelectorAll("img").forEach(t => t.classList.toggle("active", t === thumb));
-        });
-      });
-    }
     modalOverlay.classList.add("open");
   }
 
