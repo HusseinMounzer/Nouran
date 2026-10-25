@@ -173,6 +173,7 @@
 
 <label for="f-variants">Sizes / options (optional)</label>
 <input type="text" id="f-variants" placeholder="A4:$10, A5:$7, A6:$5">
+        <div id="variant-photo-inputs"></div>
 <p class="hint">One product, several sizes. Format: Name:Price, Name:Price. Put the lowest price in the Price field above.</p>
         
         <div class="actions">
@@ -229,6 +230,16 @@
       body: JSON.stringify(payload)
     }).then(r => r.json());
   }
+
+  function renderVariantPhotoInputs() {
+  const names = document.getElementById("f-variants").value
+    .split(",").map(s => s.split(":")[0].trim()).filter(Boolean);
+  document.getElementById("variant-photo-inputs").innerHTML = names.map(n => `
+    <label>Photos for “${n}” (optional — leave empty to keep current)</label>
+    <input type="file" accept="image/*" multiple data-variant="${n}">
+  `).join("");
+}
+document.getElementById("f-variants").addEventListener("change", renderVariantPhotoInputs);
 
   function fileToBase64(file) {
     return new Promise((resolve, reject) => {
@@ -311,6 +322,7 @@
       ? `This product currently has ${existingCount} extra photo(s). Leave empty to keep them, or pick new files to replace them all.`
       : "Leave empty to keep existing extra photos when editing. Choosing new files replaces them all.";
     window.scrollTo({ top: 0, behavior: "smooth" });
+    renderVariantPhotoInputs();
   }
 
   function resetForm() {
@@ -320,6 +332,7 @@
     submitBtn.textContent = "Add product";
     cancelEditBtn.style.display = "none";
     document.getElementById("photos-hint").textContent = "Leave empty to keep existing extra photos when editing. Choosing new files replaces them all.";
+    renderVariantPhotoInputs();
   }
 
   cancelEditBtn.addEventListener("click", resetForm);
@@ -358,6 +371,16 @@
           Array.from(photosInput.files).map(async f => ({ base64: await fileToBase64(f) }))
         );
       }
+      const variantImages = [];
+for (const inp of document.querySelectorAll("#variant-photo-inputs input[type=file]")) {
+  if (inp.files.length) {
+    variantImages.push({
+      name: inp.dataset.variant,
+      files: await Promise.all(Array.from(inp.files).map(async f => ({ base64: await fileToBase64(f) })))
+    });
+  }
+}
+if (variantImages.length) payload.variantImages = variantImages;
       const res = await callApi(payload);
       if (res.error) {
         showMsg(msgEl, res.error, true);
@@ -428,6 +451,7 @@ document.getElementById("add-banner-btn").addEventListener("click", async () => 
     loadBanners();
   });
 });
+  
 </script>
 
 </body>
