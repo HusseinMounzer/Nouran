@@ -561,6 +561,47 @@ body::before {
   .hero2-slide { transition: none; }
 }
 
+button.order-btn { border: 0; cursor: pointer; font-family: inherit; }
+
+.cart-fab {
+  position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 40; width: 56px; height: 56px; border-radius: 50%; border: 0;
+  background: var(--accent); color: #fff; cursor: pointer;
+  display: none; align-items: center; justify-content: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+}
+.cart-fab svg { width: 26px; height: 26px; fill: currentColor; }
+.cart-count {
+  position: absolute; top: -4px; right: -4px; min-width: 22px; height: 22px; padding: 0 5px;
+  border-radius: 999px; background: var(--ink); color: #fff; font-size: 0.75rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.cart-overlay { display: none; position: fixed; inset: 0; background: rgba(20,16,12,0.55); z-index: 60; justify-content: flex-end; }
+.cart-overlay.open { display: flex; }
+.cart-panel { background: var(--card); width: min(420px, 100%); height: 100%; display: flex; flex-direction: column; }
+.cart-head { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.2rem; border-bottom: 1px solid var(--line); }
+.cart-head h2 { margin: 0; font-size: 1.1rem; }
+.cart-head button { border: 0; background: none; font-size: 1.6rem; cursor: pointer; color: var(--ink); line-height: 1; }
+.cart-items { flex: 1; overflow-y: auto; padding: 0.4rem 1.2rem; }
+.cart-empty { color: var(--muted); text-align: center; padding: 2rem 0; }
+.cart-row { display: flex; gap: 0.8rem; align-items: flex-start; padding: 0.8rem 0; border-bottom: 1px solid var(--line); }
+.cart-row img { width: 56px; height: 56px; object-fit: cover; border-radius: 6px; background: var(--line); flex-shrink: 0; }
+.cart-info { flex: 1; min-width: 0; }
+.cart-name { font-weight: 600; font-size: 0.92rem; }
+.cart-price { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.4rem; }
+.cart-qty { display: inline-flex; align-items: center; gap: 0.6rem; }
+.cart-qty button { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); cursor: pointer; font-size: 1rem; color: var(--ink); }
+.cart-remove { border: 0; background: none; font-size: 1.3rem; color: var(--muted); cursor: pointer; }
+.cart-foot { padding: 1rem 1.2rem calc(1rem + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 0.7rem; }
+.cart-total { font-weight: 700; font-size: 1.05rem; }
+.cart-clear { border: 0; background: none; color: var(--muted); font-size: 0.85rem; cursor: pointer; text-decoration: underline; font-family: inherit; }
+.toast {
+  position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%) translateY(10px);
+  background: var(--ink); color: #fff; padding: 0.6rem 1.1rem; border-radius: 999px; font-size: 0.88rem;
+  opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; z-index: 70;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  
 </style>
 </head>
 <body>
@@ -604,7 +645,7 @@ body::before {
         <ul class="combo-list" id="modal-combo-list"></ul>
       </div>
       <p class="desc" id="modal-desc"></p>
-      <a class="order-btn" id="modal-order-btn" href="#" target="_blank" rel="noopener">Order on WhatsApp</a>
+      <button type="button" class="order-btn" id="modal-order-btn">Add to cart</button>
     </div>
   </div>
 </div>
@@ -613,7 +654,27 @@ body::before {
   <button class="zoom-close" id="zoom-close" aria-label="Close">&times;</button>
   <img id="zoom-img" src="" alt="" draggable="false">
 </div>
+<button class="cart-fab" id="cart-fab" aria-label="Open cart">
+  <svg viewBox="0 0 24 24"><path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2v2h2l3.6 7.6-1.4 2.4A2 2 0 0 0 7 17h12v-2H7.4l1.1-2h7.5a2 2 0 0 0 1.7-1l3.6-6.5A1 1 0 0 0 20.4 4H5.2l-.9-2H1Z"/></svg>
+  <span class="cart-count" id="cart-count">0</span>
+</button>
 
+<div class="cart-overlay" id="cart-overlay">
+  <aside class="cart-panel">
+    <div class="cart-head">
+      <h2>Your cart</h2>
+      <button id="cart-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="cart-items" id="cart-items"></div>
+    <div class="cart-foot" id="cart-foot">
+      <div class="cart-total" id="cart-total"></div>
+      <a class="order-btn" id="cart-order-btn" href="#" target="_blank" rel="noopener">Order on WhatsApp</a>
+      <button type="button" class="cart-clear" id="cart-clear">Clear cart</button>
+    </div>
+  </aside>
+</div>
+
+<div class="toast" id="toast"></div>
 <script>
 
   const CONFIG = {
@@ -804,7 +865,7 @@ body::before {
   ? `<span class="order-btn sold-out-btn">Sold Out</span>`
   : hasVariants
     ? `<span class="order-btn">Choose size</span>`
-    : `<a class="order-btn" href="${waLink(p.name)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Order on WhatsApp</a>`}
+    : `<button type="button" class="order-btn" data-add="${i}">Add to cart</button>`}
         </div>
       </div>
     `;
@@ -813,6 +874,12 @@ body::before {
     grid.querySelectorAll(".card").forEach(card => {
       card.addEventListener("click", () => openModal(CURRENT_RENDERED[card.dataset.idx]));
     });
+    grid.querySelectorAll("[data-add]").forEach(btn => {
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    addToCart(CURRENT_RENDERED[btn.dataset.add], null);
+  });
+});
   }
 
   const modalOverlay = document.getElementById("modal-overlay");
@@ -880,6 +947,7 @@ function displayPrice(p) {
   
   function openModal(p) {
     if (!p) return;
+    modalProduct = p; modalVariant = null;
     const images = galleryFor(p);
     const stocked = inStock(p);
     document.getElementById("modal-name").textContent = p.name;
@@ -919,8 +987,7 @@ function displayPrice(p) {
     const stockStatus = document.getElementById("modal-stock-status");
     if (stocked) {
       orderBtn.style.display = "";
-      orderBtn.href = waLink(p.name);
-      orderBtn.textContent = "Order on WhatsApp";
+      orderBtn.textContent = "Add to cart";
       stockStatus.style.display = "none";
     } else {
       orderBtn.style.display = "none";
@@ -935,7 +1002,7 @@ if (variants.length) {
   const select = (i) => {
     chipsEl.querySelectorAll(".variant-chip").forEach((c, ci) => c.classList.toggle("active", ci === i));
     document.getElementById("modal-price").textContent = variants[i].price;
-    orderBtn.href = waLink(p.name + " (" + variants[i].name + ")");
+    modalVariant = variants[i];
     renderGallery(vphotos[variants[i].name.toLowerCase()] || images);
   };
   chipsEl.innerHTML = variants.map(v =>
@@ -1102,6 +1169,108 @@ document.getElementById("modal-main-img").addEventListener("click", () => {
 }
 loadHeroImages();
 
+let CART = [];
+try { CART = JSON.parse(localStorage.getItem("nouran-cart") || "[]"); } catch (e) { CART = []; }
+let modalProduct = null, modalVariant = null, toastTimer;
+
+function saveCart() {
+  try { localStorage.setItem("nouran-cart", JSON.stringify(CART)); } catch (e) {}
+  updateCartUI();
+}
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 1600);
+}
+
+function addToCart(p, variant) {
+  if (!p) return;
+  const label = variant ? `${p.name} (${variant.name})` : p.name;
+  const price = variant ? variant.price : p.price;
+  const key = (p.id || p.name) + "|" + (variant ? variant.name : "");
+  const existing = CART.find(i => i.key === key);
+  if (existing) existing.qty++;
+  else CART.push({ key, label, price, photo: p.photo || "", qty: 1 });
+  saveCart();
+  showToast("Added to cart");
+}
+
+function fmtMoney(n) { return Number.isInteger(n) ? String(n) : n.toFixed(2); }
+
+function updateCartUI() {
+  const count = CART.reduce((s, i) => s + i.qty, 0);
+  document.getElementById("cart-count").textContent = count;
+  document.getElementById("cart-fab").style.display = count ? "flex" : "none";
+
+  const itemsEl = document.getElementById("cart-items");
+  const footEl = document.getElementById("cart-foot");
+  if (!CART.length) {
+    itemsEl.innerHTML = '<p class="cart-empty">Your cart is empty.</p>';
+    footEl.style.display = "none";
+    return;
+  }
+  footEl.style.display = "flex";
+  itemsEl.innerHTML = CART.map((it, i) => `
+    <div class="cart-row">
+      <img src="${it.photo}" alt="">
+      <div class="cart-info">
+        <div class="cart-name">${it.label}</div>
+        <div class="cart-price">${it.price}</div>
+        <div class="cart-qty">
+          <button type="button" data-act="dec" data-i="${i}" aria-label="Less">−</button>
+          <span>${it.qty}</span>
+          <button type="button" data-act="inc" data-i="${i}" aria-label="More">+</button>
+        </div>
+      </div>
+      <button type="button" class="cart-remove" data-act="rm" data-i="${i}" aria-label="Remove">&times;</button>
+    </div>
+  `).join("");
+
+  let total = 0, allPriced = true;
+  CART.forEach(it => {
+    const n = parsePriceNumber(it.price);
+    if (n === null) allPriced = false; else total += n * it.qty;
+  });
+  const prefix = currencyPrefix(CART[0].price);
+  document.getElementById("cart-total").textContent = allPriced ? "Total: " + prefix + fmtMoney(total) : "";
+
+  const lines = CART.map((it, n) => `${n + 1}. ${it.label} x${it.qty} (${it.price} each)`);
+  let msg = "Hi! I'd like to order:\n" + lines.join("\n");
+  if (allPriced) msg += "\n\nTotal: " + prefix + fmtMoney(total);
+  document.getElementById("cart-order-btn").href =
+    "https://wa.me/" + CONFIG.WHATSAPP_NUMBER + "?text=" + encodeURIComponent(msg);
+}
+
+const cartOverlay = document.getElementById("cart-overlay");
+function openCart() { cartOverlay.classList.add("open"); }
+function closeCart() { cartOverlay.classList.remove("open"); }
+
+document.getElementById("cart-fab").addEventListener("click", openCart);
+document.getElementById("cart-close").addEventListener("click", closeCart);
+cartOverlay.addEventListener("click", e => { if (e.target === cartOverlay) closeCart(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeCart(); });
+document.getElementById("cart-clear").addEventListener("click", () => { CART = []; saveCart(); });
+
+document.getElementById("cart-items").addEventListener("click", e => {
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  const i = Number(b.dataset.i);
+  if (b.dataset.act === "inc") CART[i].qty++;
+  else if (b.dataset.act === "dec") { CART[i].qty--; if (CART[i].qty <= 0) CART.splice(i, 1); }
+  else if (b.dataset.act === "rm") CART.splice(i, 1);
+  saveCart();
+});
+
+document.getElementById("modal-order-btn").addEventListener("click", () => {
+  addToCart(modalProduct, modalVariant);
+  closeModal();
+});
+
+updateCartUI();
+  
   loadAll();
 </script>
 
