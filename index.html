@@ -691,10 +691,8 @@ button.order-btn { border: 0; cursor: pointer; font-family: inherit; }
     CATEGORY_SHEETS: [
       { name: "Notebooks - دفاتر", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSokfAjiccay1JvNXYKgdiF9mV-G3jhULrNfTdBMx4Gg9dwA_8EvOSRAWkAgbPGSGjcpBtzdBq_1eip/pub?gid=1372699140&single=true&output=csv" },
       { name: "Candles - شموع", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSokfAjiccay1JvNXYKgdiF9mV-G3jhULrNfTdBMx4Gg9dwA_8EvOSRAWkAgbPGSGjcpBtzdBq_1eip/pub?gid=259409008&single=true&output=csv" },
-      { name: "Gypsum - جفصين", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSokfAjiccay1JvNXYKgdiF9mV-G3jhULrNfTdBMx4Gg9dwA_8EvOSRAWkAgbPGSGjcpBtzdBq_1eip/pub?gid=1972855592&single=true&output=csv"},
-      { name: "Combo Boxes - بوكسات", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSokfAjiccay1JvNXYKgdiF9mV-G3jhULrNfTdBMx4Gg9dwA_8EvOSRAWkAgbPGSGjcpBtzdBq_1eip/pub?gid=1114555150&single=true&output=csv" },
       { name: "Stationery - قرطاسية", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSokfAjiccay1JvNXYKgdiF9mV-G3jhULrNfTdBMx4Gg9dwA_8EvOSRAWkAgbPGSGjcpBtzdBq_1eip/pub?gid=1813205240&single=true&output=csv" },
-      { name: "Seasonal - منتجات موسمية", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSokfAjiccay1JvNXYKgdiF9mV-G3jhULrNfTdBMx4Gg9dwA_8EvOSRAWkAgbPGSGjcpBtzdBq_1eip/pub?gid=1496763493&single=true&output=csv" }
+      { name: "Combo Boxes - بوكسات", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSokfAjiccay1JvNXYKgdiF9mV-G3jhULrNfTdBMx4Gg9dwA_8EvOSRAWkAgbPGSGjcpBtzdBq_1eip/pub?gid=1114555150&single=true&output=csv" }
     ],
 
     SOCIALS: {
@@ -922,6 +920,18 @@ button.order-btn { border: 0; cursor: pointer; font-family: inherit; }
   return map;
 }
 
+  function parseVariantDescriptions(raw) {
+  const map = {};
+  (raw || "").split("|").forEach(part => {
+    const i = part.indexOf("=");
+    if (i === -1) return;
+    const name = part.slice(0, i).trim().toLowerCase();
+    const text = part.slice(i + 1).trim();
+    if (name && text) map[name] = text;
+  });
+  return map;
+}
+
 function renderGallery(images) {
   const main = document.getElementById("modal-main-img");
   main.src = images[0];
@@ -1001,9 +1011,11 @@ const variants = parseComboItems(p.variants);
 if (variants.length) {
   const chipsEl = document.getElementById("modal-variant-chips");
   const vphotos = parseVariantPhotos(p.variant_photos);
+  const vdesc = parseVariantDescriptions(p.variant_descriptions);
   const select = (i) => {
     chipsEl.querySelectorAll(".variant-chip").forEach((c, ci) => c.classList.toggle("active", ci === i));
     document.getElementById("modal-price").textContent = variants[i].price;
+    document.getElementById("modal-desc").textContent = vdesc[variants[i].name.toLowerCase()] || p.description || "";
     modalVariant = variants[i];
     renderGallery(vphotos[variants[i].name.toLowerCase()] || images);
   };
