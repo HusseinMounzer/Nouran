@@ -199,7 +199,7 @@
   const CONFIG = {
     WEB_APP_URL: "https://script.google.com/macros/s/AKfycbz9zBlT1GjaAMOY4g9n8Z6mJqy9YCulche8OOl6ylzCUXPlmfndUSri7qGxLvN2b2AOQA/exec",
     CATEGORIES: [
-      "Notebooks - دفاتر", "Candles - شموع", "Gypsum - جفصين", "Combo Boxes - بوكسات", "Stationery - قرطاسية", "Seasonal - منتجات موسمية"
+      "Notebooks - دفاتر", "Candles - شموع", "Stationery - قرطاسية", "Combo Boxes - بوكسات"
     ],
     BANNER_SHEET: "Banner"
   };
@@ -232,13 +232,23 @@
   }
 
   function renderVariantPhotoInputs() {
+  const old = {};
+  document.querySelectorAll("#variant-photo-inputs textarea").forEach(t => {
+    old[t.dataset.vdesc.toLowerCase()] = t.value;
+  });
   const names = document.getElementById("f-variants").value
     .split(",").map(s => s.split(":")[0].trim()).filter(Boolean);
   document.getElementById("variant-photo-inputs").innerHTML = names.map(n => `
-    <label>Photos for “${n}” (optional — leave empty to keep current)</label>
+    <label>“${n}” — description (optional)</label>
+    <textarea data-vdesc="${n}" placeholder="Leave empty to use the main description"></textarea>
+    <label>“${n}” — photos (optional, leave empty to keep current)</label>
     <input type="file" accept="image/*" multiple data-variant="${n}">
   `).join("");
+  document.querySelectorAll("#variant-photo-inputs textarea").forEach(t => {
+    t.value = old[t.dataset.vdesc.toLowerCase()] || "";
+  });
 }
+  
 document.getElementById("f-variants").addEventListener("change", renderVariantPhotoInputs);
 
   function fileToBase64(file) {
@@ -323,6 +333,14 @@ document.getElementById("f-variants").addEventListener("change", renderVariantPh
       : "Leave empty to keep existing extra photos when editing. Choosing new files replaces them all.";
     window.scrollTo({ top: 0, behavior: "smooth" });
     renderVariantPhotoInputs();
+    const vd = {};
+(p.variant_descriptions || "").split("|").forEach(part => {
+  const i = part.indexOf("=");
+  if (i > -1) vd[part.slice(0, i).trim().toLowerCase()] = part.slice(i + 1).trim();
+});
+document.querySelectorAll("#variant-photo-inputs textarea").forEach(t => {
+  t.value = vd[t.dataset.vdesc.toLowerCase()] || "";
+});
   }
 
   function resetForm() {
@@ -351,6 +369,13 @@ document.getElementById("f-variants").addEventListener("change", renderVariantPh
       combo_items: document.getElementById("f-combo").value.trim(),
       variants: document.getElementById("f-variants").value.trim()
     };
+
+    const vdescParts = [];
+document.querySelectorAll("#variant-photo-inputs textarea").forEach(t => {
+  const txt = t.value.trim().replace(/\|/g, "-").replace(/\s*\n+\s*/g, " ");
+  if (txt) vdescParts.push(t.dataset.vdesc + "=" + txt);
+});
+product.variant_descriptions = vdescParts.join(" | ");
 
     const payload = {
       action: EDITING_ID ? "edit" : "add",
