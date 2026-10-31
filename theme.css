@@ -1,0 +1,62 @@
+/* Nouran redesign layer. Loads AFTER the inline <style>, so it overrides it. */
+:root{--accent:#7b173b;--ink:#2a1a22;--paper:#fff9f8;--card:#fff;--line:#f0dfe4;--muted:#80646f;--blush:#f8dde4;--gold:#d9b77e}
+[hidden]{display:none!important}
+body{font-family:'Tajawal',sans-serif;background:var(--paper);background-image:none}
+body::before{display:none}
+button,input{font-family:inherit}
+
+/* navbar */
+.nav{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:.8rem;padding:.7rem 1.2rem;background:var(--paper);border-bottom:1px solid var(--line)}
+.nav-brand{flex:1;text-align:center;font-size:1.7rem;font-weight:700;color:var(--accent);text-decoration:none}
+.nav-brand img{max-height:44px;width:auto;vertical-align:middle}
+.nav-burger,.nav-cart{position:relative;width:42px;height:42px;display:flex;align-items:center;justify-content:center;background:none;border:0;color:var(--accent);font-size:1.6rem;cursor:pointer}
+.nav-cart svg{width:26px;height:26px;fill:currentColor}
+.nav-cart-count{position:absolute;top:2px;inset-inline-end:0;min-width:18px;height:18px;padding:0 4px;border-radius:999px;background:var(--accent);color:#fff;font-size:.7rem;font-weight:700;display:none;align-items:center;justify-content:center}
+.nav-cart-count.on{display:flex}
+.nav-links{display:none;position:absolute;top:100%;inset-inline:0;flex-direction:column;padding:.4rem 1.2rem;background:var(--paper);border-bottom:1px solid var(--line)}
+.nav-links.open{display:flex}
+.nav-links a{padding:.7rem 0;color:var(--ink);text-decoration:none;font-weight:500}
+.nav-links a.active{color:var(--accent);font-weight:700}
+@media(min-width:720px){.nav-burger{display:none}.nav-links{display:flex;position:static;flex-direction:row;gap:1.4rem;padding:0;border:0;background:none}}
+
+/* home */
+#view-home header{max-width:1080px;margin:0 auto;padding:2rem 1.2rem 1rem;border:0;text-align:start}
+header .logo{display:none!important}
+header h1{font-family:inherit;color:var(--accent);font-weight:700;font-size:clamp(1.8rem,5vw,2.6rem);line-height:1.3;letter-spacing:0}
+header p{font-family:inherit;color:var(--muted);font-size:1.1rem}
+.hero2{width:calc(100% - 2.4rem);margin:1rem auto 0}
+.home-cta{text-align:center;margin:1.4rem 0}
+.btn-main{display:inline-block;padding:.9rem 2.4rem;border-radius:999px;background:var(--accent);color:#fff;font-weight:700;text-decoration:none}
+.band{margin-top:1.5rem;padding:2rem 1.2rem;background:var(--blush)}
+.band h2,.feat-head h2{margin:0 0 1.2rem;color:var(--accent);font-size:1.5rem;text-align:center}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:.9rem;max-width:1080px;margin:0 auto}
+@media(min-width:720px){.tiles{grid-template-columns:repeat(3,1fr)}}
+.tile{display:flex;flex-direction:column;gap:.5rem;background:none;border:0;color:var(--accent);font-size:1rem;font-weight:700;text-align:center;cursor:pointer}
+.tile img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:18px;background:#fff}
+.home-feat{max-width:1080px;margin:0 auto;padding:2rem 1.2rem}
+.feat-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem}
+.feat-head h2{margin:0;text-align:start}
+.feat-head a{color:var(--accent);text-decoration:none;font-weight:500}
+.about{max-width:680px;margin:0 auto;padding:2.5rem 1.2rem;line-height:1.9}
+.about h2{color:var(--accent)}
+
+/* components */
+.card{border-radius:18px;border-color:var(--line)}
+.price{color:var(--accent)}
+.order-btn{border-radius:999px;background:var(--accent)}
+.chip{border-color:var(--line);font-family:inherit}
+.chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.modal{border-radius:18px}
+.modal-body h2{font-family:inherit;font-weight:700;color:var(--accent)}
+.cart-fab{display:none!important}
+
+/* footer */
+footer{margin-top:2rem;border:0;background:var(--accent);color:#fff}
+footer .note{font-family:inherit;color:#fff;font-size:1rem;line-height:1.8}
+.socials a{background:transparent;border-color:rgba(255,255,255,.5);color:#fff}
+.socials a:hover{border-color:var(--gold);color:var(--gold)}
+
+/* right-to-left mirroring */
+.modal-close{right:auto;left:.7rem}
+.zoom-close{right:auto;left:1rem}
+.badge-soldout{left:auto;right:.6rem}
