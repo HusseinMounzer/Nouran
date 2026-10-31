@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -12,6 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Quicksand:wght@400;500&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Zeyada&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Marhey:wght@300..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
 
 <style>
   :root {
@@ -605,18 +606,42 @@ button.order-btn { border: 0; cursor: pointer; font-family: inherit; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   
 </style>
+
+<link rel="stylesheet" href="theme.css">
+  
 </head>
 <body>
 
-<header>
+<nav class="nav">
+  <button class="nav-burger" id="nav-burger" aria-label="القائمة">☰</button>
+  <div class="nav-links" id="nav-links">
+    <a href="#home" data-nav="home">الرئيسية</a>
+    <a href="#shop" data-nav="shop">المتجر</a>
+    <a href="#about" data-nav="about">من نحن</a>
+  </div>
+  <a class="nav-brand" id="nav-brand" href="#home"></a>
+  <button class="nav-cart" id="nav-cart" aria-label="السلة">
+    <svg viewBox="0 0 24 24"><path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM1 2v2h2l3.6 7.6-1.4 2.4A2 2 0 0 0 7 17h12v-2H7.4l1.1-2h7.5a2 2 0 0 0 1.7-1l3.6-6.5A1 1 0 0 0 20.4 4H5.2l-.9-2H1Z"/></svg>
+    <span class="nav-cart-count" id="nav-cart-count">0</span>
+  </button>
+</nav>
+
+<section class="view" id="view-home">
+  <header>
   <img class="logo" id="business-logo" src="" alt="" style="display:none">
   <h1 id="business-name">Nouran</h1>
   <p id="business-tagline">اكتشفوا سحر نوران! راسلونا عبر واتساب، فنحن بانتظاركم بكل حبّ✨</p>
 </header>
-
-<div class="hero2" id="hero2" style="display:none"></div>
-
-<main>
+  <div class="hero2" id="hero2" style="display:none"></div>
+  <div class="home-cta"><a class="btn-main" href="#shop">تسوّقي الآن</a></div>
+  <div class="band"><h2>تصفّحي مجموعتنا</h2><div class="tiles" id="tiles"></div></div>
+  <div class="home-feat">
+    <div class="feat-head"><h2>منتجاتنا</h2><a href="#shop">عرض الكل ←</a></div>
+    <div class="grid" id="feat-grid"></div>
+  </div>
+</section>
+  
+<main class="view" id="view-shop>
   <input type="search" id="search-box" class="search-box" placeholder="Search products...">
   <div class="chips" id="chips"></div>
   <div class="subchips" id="subchips"></div>
@@ -624,6 +649,8 @@ button.order-btn { border: 0; cursor: pointer; font-family: inherit; }
   <div class="grid" id="grid"></div>
 </main>
 
+<section class="view" id="view-about"><div class="about"><h2>من نحن</h2><p id="about-text"></p></div></section>
+  
 <footer>
   <div class="socials" id="socials"></div>
   <p class="note" id="footer-note">Little things, made by hand.</p>
@@ -1287,6 +1314,6 @@ updateCartUI();
   
   loadAll();
 </script>
-
+<script src="shell.js"></script>
 </body>
 </html>
