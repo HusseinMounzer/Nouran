@@ -6,6 +6,9 @@
 <title>Nouran</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://example.com/fontawesome/v7.0.1/js/fontawesome.js" data-auto-replace-svg="nest"></script>
+<script src="https://example.com/fontawesome/v7.0.1/js/solid.js"></script>
+<script src="https://example.com/fontawesome/v7.0.1/js/brands.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,7 +16,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Zeyada&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Marhey:wght@300..700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
 <style>
   :root {
@@ -1277,7 +1279,7 @@ function updateCartUI() {
     if (n === null) allPriced = false; else total += n * it.qty;
   });
   const prefix = currencyPrefix(CART[0].price);
-  document.getElementById("cart-total").textContent = allPriced ? "Total: $" + prefix + fmtMoney(total) : "";
+  document.getElementById("cart-total").textContent = allPriced ? "Total: " + prefix + fmtMoney(total) : "";
 
   const lines = CART.map((it, n) => `${n + 1}. ${it.label} x${it.qty} (${it.price} each)`);
   let msg = "Hi! I'd like to order:\n" + lines.join("\n");
