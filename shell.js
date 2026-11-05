@@ -1,9 +1,8 @@
-// Loads AFTER the main inline script, so it can use its variables and functions.
 const SHELL = {
   TITLE: "نوران",
   HEADLINE: "تفاصيل صغيرة، سعادة كبيرة",
   SUBTITLE: "اكتشفي مجموعتنا من الدفاتر والقرطاسية والهدايا المصمّمة بحب.",
-  ABOUT: "نوران مشروع صغير يصنع الدفاتر والشموع وعلب الهدايا بلمسة يدوية، بحب واهتمام بكل تفصيل."
+  ABOUT: "نوران مشروع يصنع الدفاتر والشموع وعلب الهدايا بلمسة يدوية، بحب واهتمام بكل تفصيل."
 };
 const VIEWS = ["home", "shop", "about"];
 const $ = id => document.getElementById(id);
