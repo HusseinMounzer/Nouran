@@ -615,7 +615,7 @@ button.order-btn { border: 0; cursor: pointer; font-family: inherit; }
 <nav class="nav">
   <button class="nav-burger" id="nav-burger" aria-label="القائمة">☰</button>
   <div class="nav-links" id="nav-links">
-    <a href="#home" data-nav="home">الرئيسية</a>
+    <a href="#home" data-nav="home">الرئيسية </a>
     <a href="#shop" data-nav="shop">المتجر</a>
     <a href="#about" data-nav="about">من نحن</a>
   </div>
@@ -633,8 +633,8 @@ button.order-btn { border: 0; cursor: pointer; font-family: inherit; }
   <p id="business-tagline">اكتشفوا سحر نوران! راسلونا عبر واتساب، فنحن بانتظاركم بكل حبّ✨</p>
 </header>
   <div class="hero2" id="hero2" style="display:none"></div>
-  <div class="home-cta"><a class="btn-main" href="#shop">تسوّقي الآن</a></div>
-  <div class="band"><h2>تصفّحي مجموعتنا</h2><div class="tiles" id="tiles"></div></div>
+  <div class="home-cta"><a class="btn-main" href="#shop">تسوّق الآن</a></div>
+  <div class="band"><h2>تصفّح مجموعتنا</h2><div class="tiles" id="tiles"></div></div>
   <div class="home-feat">
     <div class="feat-head"><h2>منتجاتنا</h2><a href="#shop">عرض الكل ←</a></div>
     <div class="grid" id="feat-grid"></div>
@@ -674,7 +674,7 @@ button.order-btn { border: 0; cursor: pointer; font-family: inherit; }
         <ul class="combo-list" id="modal-combo-list"></ul>
       </div>
       <p class="desc" id="modal-desc"></p>
-      <button type="button" class="order-btn" id="modal-order-btn">Add to cart</button>
+      <button type="button" class="order-btn" id="modal-order-btn">إضافة إلى السلّة</button>
     </div>
   </div>
 </div>
@@ -691,14 +691,14 @@ button.order-btn { border: 0; cursor: pointer; font-family: inherit; }
 <div class="cart-overlay" id="cart-overlay">
   <aside class="cart-panel">
     <div class="cart-head">
-      <h2>Your cart</h2>
+      <h2>السلّة</h2>
       <button id="cart-close" aria-label="Close">&times;</button>
     </div>
     <div class="cart-items" id="cart-items"></div>
     <div class="cart-foot" id="cart-foot">
       <div class="cart-total" id="cart-total"></div>
-      <a class="order-btn" id="cart-order-btn" href="#" target="_blank" rel="noopener">Order on WhatsApp</a>
-      <button type="button" class="cart-clear" id="cart-clear">Clear cart</button>
+      <a class="order-btn" id="cart-order-btn" href="#" target="_blank" rel="noopener">أطلب عبر WhatsApp</a>
+      <button type="button" class="cart-clear" id="cart-clear">إفراغ السلّة</button>
     </div>
   </aside>
 </div>
@@ -1249,7 +1249,7 @@ function updateCartUI() {
   const itemsEl = document.getElementById("cart-items");
   const footEl = document.getElementById("cart-foot");
   if (!CART.length) {
-    itemsEl.innerHTML = '<p class="cart-empty">Your cart is empty.</p>';
+    itemsEl.innerHTML = '<p class="cart-empty">السلّة فارغة</p>';
     footEl.style.display = "none";
     return;
   }
@@ -1276,7 +1276,7 @@ function updateCartUI() {
     if (n === null) allPriced = false; else total += n * it.qty;
   });
   const prefix = currencyPrefix(CART[0].price);
-  document.getElementById("cart-total").textContent = allPriced ? "Total: " + prefix + fmtMoney(total) : "";
+  document.getElementById("cart-total").textContent = allPriced ? "Total: $" + prefix + fmtMoney(total) : "";
 
   const lines = CART.map((it, n) => `${n + 1}. ${it.label} x${it.qty} (${it.price} each)`);
   let msg = "Hi! I'd like to order:\n" + lines.join("\n");
